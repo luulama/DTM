@@ -1,0 +1,2982 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Rebalancing System | DPM Platform</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #0F172A;
+            --secondary: #1E293B;
+            --accent: #3B82F6;
+            --accent-dark: #2563EB;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --surface: #F8FAFC;
+            --border: #E2E8F0;
+            --text: #0F172A;
+            --text-muted: #64748B;
+            --sidebar: #0A0F1C;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--surface);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            background: var(--sidebar);
+            color: white;
+            padding: 1.5rem;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+        
+        .nav-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .nav-item.active {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .main-content {
+            padding: 2rem;
+            max-width: 1600px;
+        }
+        
+        .header {
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: var(--text-muted);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+        
+        .stat-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-change {
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .stat-change.positive {
+            color: var(--success);
+        }
+        
+        .stat-change.negative {
+            color: var(--danger);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            background: white;
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: var(--surface);
+            border-bottom: 2px solid var(--border);
+        }
+        
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        tr:hover {
+            background: var(--surface);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .badge-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+        
+        .badge-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+        
+        .badge-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+        }
+        
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+        
+        .chat-message {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+        
+        .chat-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+            font-size: 0.875rem;
+        }
+        
+        .chat-message.assistant .chat-avatar {
+            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+            color: white;
+        }
+        
+        .chat-message.user .chat-avatar {
+            background: var(--surface);
+            color: var(--text);
+        }
+        
+        .chat-bubble {
+            padding: 1rem;
+            border-radius: 12px;
+            max-width: 70%;
+            line-height: 1.6;
+        }
+        
+        .chat-message.assistant .chat-bubble {
+            background: var(--surface);
+        }
+        
+        .chat-message.user .chat-bubble {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .chat-timestamp {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        
+        .chat-input-container {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 0.6s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 300px;
+        }
+        
+        .slider-container {
+            margin: 1.5rem 0;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            background: var(--border);
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: none;
+        }
+        
+        .suggested-prompts {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        
+        .prompt-chip {
+            padding: 0.75rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            text-align: left;
+        }
+        
+        .prompt-chip:hover {
+            background: white;
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .progress-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: var(--surface);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // ==================== DATA MODELS ====================
+        
+        // Sample Portfolio Data
+        const samplePortfolio = {
+            id: 'PF-001',
+            name: 'Diversified Growth Portfolio',
+            client: 'Acme Corporation',
+            totalValue: 5000000,
+            currency: 'USD',
+            holdings: [
+                { isin: 'US0378331005', name: 'Apple Inc.', assetClass: 'Equity', value: 1500000, weight: 0.30, sector: 'Technology', quantity: 10000, price: 150 },
+                { isin: 'US5949181045', name: 'Microsoft Corp', assetClass: 'Equity', value: 1000000, weight: 0.20, sector: 'Technology', quantity: 5000, price: 200 },
+                { isin: 'US02079K3059', name: 'Alphabet Inc.', assetClass: 'Equity', value: 500000, weight: 0.10, sector: 'Technology', quantity: 3571, price: 140 },
+                { isin: 'US9128283558', name: 'US Treasury Bond', assetClass: 'Bond', value: 1500000, weight: 0.30, sector: 'Government', quantity: 15228, price: 98.50 },
+                { isin: 'US912810SD85', name: 'Corporate Bonds', assetClass: 'Bond', value: 300000, weight: 0.06, sector: 'Corporate', quantity: 2941, price: 102 },
+                { isin: 'CASH-USD', name: 'Cash', assetClass: 'Cash', value: 200000, weight: 0.04, sector: 'Cash', quantity: 200000, price: 1 },
+            ]
+        };
+
+        // Multiple Discretionary Mandates
+        const MANDATES = [
+            {
+                id: 'MND-001',
+                name: 'Balanced Growth',
+                description: '60/35/5 allocation for moderate risk',
+                riskProfile: 'Moderate',
+                allocations: [
+                    { assetClass: 'Equity', target: 0.60, min: 0.50, max: 0.70, tolerance: 0.05 },
+                    { assetClass: 'Bond', target: 0.35, min: 0.25, max: 0.45, tolerance: 0.05 },
+                    { assetClass: 'Cash', target: 0.05, min: 0.02, max: 0.10, tolerance: 0.02 },
+                ]
+            },
+            {
+                id: 'MND-002',
+                name: 'Conservative Income',
+                description: '30/60/10 allocation for capital preservation',
+                riskProfile: 'Conservative',
+                allocations: [
+                    { assetClass: 'Equity', target: 0.30, min: 0.20, max: 0.40, tolerance: 0.05 },
+                    { assetClass: 'Bond', target: 0.60, min: 0.50, max: 0.70, tolerance: 0.05 },
+                    { assetClass: 'Cash', target: 0.10, min: 0.05, max: 0.15, tolerance: 0.03 },
+                ]
+            },
+            {
+                id: 'MND-003',
+                name: 'Aggressive Growth',
+                description: '85/12/3 allocation for maximum growth',
+                riskProfile: 'Aggressive',
+                allocations: [
+                    { assetClass: 'Equity', target: 0.85, min: 0.75, max: 0.95, tolerance: 0.05 },
+                    { assetClass: 'Bond', target: 0.12, min: 0.05, max: 0.20, tolerance: 0.03 },
+                    { assetClass: 'Cash', target: 0.03, min: 0.00, max: 0.08, tolerance: 0.02 },
+                ]
+            },
+            {
+                id: 'MND-004',
+                name: 'Income Focus',
+                description: '40/55/5 allocation for steady income',
+                riskProfile: 'Moderate-Conservative',
+                allocations: [
+                    { assetClass: 'Equity', target: 0.40, min: 0.30, max: 0.50, tolerance: 0.05 },
+                    { assetClass: 'Bond', target: 0.55, min: 0.45, max: 0.65, tolerance: 0.05 },
+                    { assetClass: 'Cash', target: 0.05, min: 0.02, max: 0.10, tolerance: 0.02 },
+                ]
+            },
+            {
+                id: 'MND-005',
+                name: 'Capital Preservation',
+                description: '20/70/10 allocation for minimal risk',
+                riskProfile: 'Very Conservative',
+                allocations: [
+                    { assetClass: 'Equity', target: 0.20, min: 0.10, max: 0.30, tolerance: 0.05 },
+                    { assetClass: 'Bond', target: 0.70, min: 0.60, max: 0.80, tolerance: 0.05 },
+                    { assetClass: 'Cash', target: 0.10, min: 0.05, max: 0.15, tolerance: 0.03 },
+                ]
+            }
+        ];
+
+        // For backwards compatibility
+        const sampleMandate = MANDATES[0];
+
+        // ==================== AUDIT TRAIL & HISTORY ====================
+        const AUDIT_TRAIL = [];
+        
+        function logAudit(action, details) {
+            const entry = {
+                timestamp: new Date().toISOString(),
+                action,
+                details,
+                user: 'Portfolio Manager'
+            };
+            AUDIT_TRAIL.push(entry);
+            localStorage.setItem('auditTrail', JSON.stringify(AUDIT_TRAIL));
+            return entry;
+        }
+
+        // ==================== EXPORT FUNCTIONS ====================
+        
+        function downloadJSON(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadCSV(data, filename) {
+            if (!data || data.length === 0) return;
+            const headers = Object.keys(data[0]);
+            const csv = [
+                headers.join(','),
+                ...data.map(row => headers.map(h => `"${row[h]}"`).join(','))
+            ].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function generatePDF(title, content) {
+            const doc = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${title}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #0F172A; border-bottom: 3px solid #3B82F6; padding-bottom: 10px; }
+        h2 { color: #1E293B; margin-top: 30px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #E2E8F0; padding: 12px; text-align: left; }
+        th { background: #F8FAFC; font-weight: 600; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .badge-success { background: #ECFDF5; color: #065F46; }
+        .badge-warning { background: #FFFBEB; color: #92400E; }
+        .badge-danger { background: #FEF2F2; color: #991B1B; }
+        .footer { margin-top: 50px; font-size: 12px; color: #64748B; border-top: 1px solid #E2E8F0; padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>${title}</h1>
+    <div class="meta">Generated: ${new Date().toLocaleString('sv-SE')}</div>
+    ${content}
+    <div class="footer">
+        <p>DPM Workbench - Portfolio Management System</p>
+        <p>This report was automatically generated. All data is as of ${new Date().toLocaleDateString('sv-SE')}.</p>
+    </div>
+</body>
+</html>`;
+            const blob = new Blob([doc], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        // ==================== ANALYTICS FUNCTIONS ====================
+        
+        function calculatePerformance(portfolio, days = 30) {
+            const baseReturn = 0.05; // Mock 5% annual
+            const dailyReturn = Math.pow(1 + baseReturn, 1/365) - 1;
+            const totalReturn = Math.pow(1 + dailyReturn, days) - 1;
+            return {
+                totalReturn: totalReturn * 100,
+                annualized: baseReturn * 100,
+                sharpeRatio: 1.2,
+                maxDrawdown: -3.5,
+                volatility: 8.2
+            };
+        }
+
+        function calculateRiskMetrics(portfolio) {
+            const allocation = {};
+            portfolio.holdings.forEach(h => {
+                allocation[h.assetClass] = (allocation[h.assetClass] || 0) + h.weight;
+            });
+            
+            const equityWeight = allocation['Equity'] || 0;
+            const bondWeight = allocation['Bond'] || 0;
+            
+            // Mock risk calculations
+            const portfolioVol = Math.sqrt(
+                Math.pow(equityWeight * 0.15, 2) + 
+                Math.pow(bondWeight * 0.05, 2)
+            );
+            
+            const expectedReturn = equityWeight * 0.08 + bondWeight * 0.03;
+            const sharpeRatio = (expectedReturn - 0.02) / portfolioVol;
+            
+            return {
+                volatility: portfolioVol * 100,
+                expectedReturn: expectedReturn * 100,
+                sharpeRatio: sharpeRatio,
+                var95: portfolio.totalValue * portfolioVol * 1.65,
+                beta: 0.85
+            };
+        }
+
+        // ==================== AUTO-TRADE GENERATION ====================
+        
+        function autoGenerateTrades(portfolio, mandate, threshold = 0.05) {
+            const allocation = {};
+            portfolio.holdings.forEach(h => {
+                allocation[h.assetClass] = (allocation[h.assetClass] || 0) + h.weight;
+            });
+            
+            const trades = [];
+            let shouldExecute = false;
+            
+            mandate.allocations.forEach(rule => {
+                const current = allocation[rule.assetClass] || 0;
+                const drift = Math.abs(current - rule.target);
+                
+                if (drift > threshold || current < rule.min || current > rule.max) {
+                    shouldExecute = true;
+                    const targetValue = rule.target * portfolio.totalValue;
+                    const currentValue = current * portfolio.totalValue;
+                    const tradeValue = targetValue - currentValue;
+                    
+                    trades.push({
+                        assetClass: rule.assetClass,
+                        action: tradeValue > 0 ? 'BUY' : 'SELL',
+                        amount: Math.abs(tradeValue),
+                        reason: drift > threshold ? 'Tolerance breach' : 
+                                current < rule.min ? 'Below minimum' : 'Above maximum'
+                    });
+                }
+            });
+            
+            return { shouldExecute, trades };
+        }
+
+        // Mock Trade History Data
+        const mockTradeHistory = [
+            { id: 'T001', date: '2026-02-10', portfolio: 'PF-001', instrument: 'Apple Inc.', action: 'BUY', amount: 150000, quantity: 1000, status: 'EXECUTED' },
+            { id: 'T002', date: '2026-02-10', portfolio: 'PF-001', instrument: 'US Treasury Bond', action: 'SELL', amount: 100000, quantity: 1015, status: 'EXECUTED' },
+            { id: 'T003', date: '2026-02-05', portfolio: 'PF-001', instrument: 'Microsoft Corp', action: 'BUY', amount: 200000, quantity: 1000, status: 'EXECUTED' },
+            { id: 'T004', date: '2026-01-28', portfolio: 'PF-001', instrument: 'Corporate Bonds', action: 'SELL', amount: 50000, quantity: 490, status: 'EXECUTED' },
+            { id: 'T005', date: '2026-01-20', portfolio: 'PF-001', instrument: 'Alphabet Inc.', action: 'BUY', amount: 100000, quantity: 714, status: 'EXECUTED' },
+        ];
+
+        // ==================== CHART COMPONENTS ====================
+        
+        const BarChart = ({ chartData }) => {
+            const canvasRef = useRef(null);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                if (!window.Chart || !canvasRef.current) return;
+
+                const ctx = canvasRef.current.getContext('2d');
+                
+                if (chartRef.current) {
+                    chartRef.current.destroy();
+                    chartRef.current = null;
+                }
+
+                chartRef.current = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartData.map(d => d.name),
+                        datasets: [
+                            {
+                                label: 'Current',
+                                data: chartData.map(d => parseFloat(d.Current) || 0),
+                                backgroundColor: '#3B82F6',
+                            },
+                            {
+                                label: 'Target',
+                                data: chartData.map(d => parseFloat(d.Target) || 0),
+                                backgroundColor: '#10B981',
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Allocation (%)'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                return () => {
+                    if (chartRef.current) {
+                        chartRef.current.destroy();
+                        chartRef.current = null;
+                    }
+                };
+            }, [chartData]);
+
+            return React.createElement('canvas', { ref: canvasRef });
+        };
+
+        const PieChart = ({ pieData, colors }) => {
+            const canvasRef = useRef(null);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                if (!window.Chart || !canvasRef.current) return;
+
+                const ctx = canvasRef.current.getContext('2d');
+                
+                if (chartRef.current) {
+                    chartRef.current.destroy();
+                    chartRef.current = null;
+                }
+
+                chartRef.current = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: pieData.map(d => d.name),
+                        datasets: [{
+                            data: pieData.map(d => parseFloat(d.value) || 0),
+                            backgroundColor: pieData.map(d => colors[d.name] || '#94A3B8'),
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            }
+                        }
+                    }
+                });
+
+                return () => {
+                    if (chartRef.current) {
+                        chartRef.current.destroy();
+                        chartRef.current = null;
+                    }
+                };
+            }, [pieData, colors]);
+
+            return React.createElement('canvas', { ref: canvasRef });
+        };
+
+        // ==================== AI CONFIGURATION ====================
+        
+        // Claude API Configuration
+        const AI_CONFIG = {
+            apiKey: '', // Add your API key here
+            model: 'claude-sonnet-4-20250514',
+            apiUrl: 'https://api.anthropic.com/v1/messages',
+            maxTokens: 2000,
+            temperature: 0.7,
+            anthropicVersion: '2023-06-01',
+            // Try API first, fall back to local AI if it fails
+            useLocalServer: false,
+            localServerUrl: 'http://localhost:8000/api/claude',
+            enableFallback: true // Use built-in AI when API fails
+        };
+
+        // ==================== AI REASONING ENGINE ====================
+        
+        const AIReasoningEngine = {
+            // Analyze portfolio and generate context-aware response
+            generateResponse: (query, portfolio, mandate) => {
+                const lowerQuery = query.toLowerCase();
+                
+                // Calculate allocation
+                const allocation = {};
+                portfolio.holdings.forEach(h => {
+                    allocation[h.assetClass] = (allocation[h.assetClass] || 0) + h.weight;
+                });
+                
+                // Calculate drift
+                const driftAnalysis = mandate.allocations.map(rule => {
+                    const current = allocation[rule.assetClass] || 0;
+                    const drift = current - rule.target;
+                    const driftPct = rule.target !== 0 ? (drift / rule.target) * 100 : 0;
+                    return {
+                        assetClass: rule.assetClass,
+                        current,
+                        target: rule.target,
+                        drift,
+                        driftPct,
+                        inRange: current >= rule.min && current <= rule.max,
+                        withinTolerance: Math.abs(drift) <= rule.tolerance
+                    };
+                });
+                
+                // Determine response type
+                if (lowerQuery.includes('drift') || lowerQuery.includes('out of mandate') || lowerQuery.includes('rebalanc')) {
+                    return AIReasoningEngine.explainDrift(driftAnalysis, allocation);
+                } else if (lowerQuery.includes('drop') || lowerQuery.includes('fall') || lowerQuery.includes('decline') || lowerQuery.includes('shock')) {
+                    const match = lowerQuery.match(/(\d+)%?/);
+                    const shockPct = match ? parseInt(match[1]) : 10;
+                    return AIReasoningEngine.scenarioAnalysis(portfolio, allocation, shockPct);
+                } else if (lowerQuery.includes('risk') || lowerQuery.includes('exposure') || lowerQuery.includes('concentration')) {
+                    return AIReasoningEngine.riskAnalysis(portfolio, allocation);
+                } else if (lowerQuery.includes('trade') || lowerQuery.includes('recommend')) {
+                    return AIReasoningEngine.explainTrades(driftAnalysis, portfolio);
+                } else if (lowerQuery.includes('summar') || lowerQuery.includes('overview')) {
+                    return AIReasoningEngine.portfolioSummary(portfolio, allocation, driftAnalysis);
+                } else if (lowerQuery.includes('client') || lowerQuery.includes('report')) {
+                    return AIReasoningEngine.clientCommentary(portfolio, driftAnalysis);
+                } else if (lowerQuery.includes('compliance') || lowerQuery.includes('breach')) {
+                    return AIReasoningEngine.complianceCheck(driftAnalysis);
+                } else if (lowerQuery.includes('suggest') || lowerQuery.includes('improve')) {
+                    return AIReasoningEngine.processRecommendations();
+                }
+                
+                return AIReasoningEngine.defaultResponse();
+            },
+            
+            explainDrift: (driftAnalysis, allocation) => {
+                const outOfTolerance = driftAnalysis.filter(d => !d.withinTolerance);
+                const breaches = driftAnalysis.filter(d => !d.inRange);
+                
+                if (breaches.length === 0 && outOfTolerance.length === 0) {
+                    return "✅ **Portfolio is In Compliance**\n\nAll asset classes are within their target ranges and tolerance bands. No immediate rebalancing required.\n\n**Current Status:**\n" +
+                        driftAnalysis.map(d => `• ${d.assetClass}: ${(d.current*100).toFixed(1)}% (target: ${(d.target*100).toFixed(1)}%)`).join('\n');
+                }
+                
+                let response = "📊 **Portfolio Drift Analysis**\n\n";
+                
+                if (breaches.length > 0) {
+                    response += "🔴 **Mandate Breaches Detected:**\n";
+                    breaches.forEach(d => {
+                        response += `• ${d.assetClass}: Current allocation ${(d.current*100).toFixed(1)}% is ${d.current < d.target ? 'below minimum' : 'above maximum'} threshold\n`;
+                    });
+                    response += "\n";
+                }
+                
+                if (outOfTolerance.length > 0) {
+                    response += "⚠️ **Drift Beyond Tolerance:**\n";
+                    outOfTolerance.forEach(d => {
+                        response += `• ${d.assetClass}: ${(d.drift*100).toFixed(2)}% drift from target (${d.driftPct >= 0 ? '+' : ''}${d.driftPct.toFixed(1)}%)\n`;
+                    });
+                    response += "\n";
+                }
+                
+                response += "**Primary Causes:**\n";
+                response += "• Market appreciation in equity positions (Technology sector)\n";
+                response += "• Relative underperformance in fixed income\n";
+                response += "• Cash position depleted by recent distributions\n\n";
+                
+                response += "**Recommended Action:** Execute rebalancing to restore target allocation. Navigate to Rebalancing view to generate trade recommendations.";
+                
+                return response;
+            },
+            
+            scenarioAnalysis: (portfolio, allocation, shockPct) => {
+                const equityWeight = allocation['Equity'] || 0;
+                const bondWeight = allocation['Bond'] || 0;
+                const cashWeight = allocation['Cash'] || 0;
+                
+                const totalValue = portfolio.totalValue;
+                const equityValue = totalValue * equityWeight;
+                const equityLoss = equityValue * (shockPct / 100);
+                const newTotalValue = totalValue - equityLoss;
+                const valueChangePct = (equityLoss / totalValue) * 100;
+                
+                // New allocation after shock
+                const newEquityWeight = (equityValue - equityLoss) / newTotalValue;
+                const newBondWeight = (bondWeight * totalValue) / newTotalValue;
+                const newCashWeight = (cashWeight * totalValue) / newTotalValue;
+                
+                return `📉 **Market Stress Scenario: -${shockPct}% Equity Decline**\n\n` +
+                    `**Portfolio Impact:**\n` +
+                    `• Nuvarande värde: $${(totalValue/1000000).toFixed(2)}M\n` +
+                    `• Post-Shock Value: $${(newTotalValue/1000000).toFixed(2)}M\n` +
+                    `• Total Loss: $${(equityLoss/1000).toFixed(0)}K (-${valueChangePct.toFixed(2)}%)\n\n` +
+                    `**Allocation Shift:**\n` +
+                    `• Equity: ${(equityWeight*100).toFixed(1)}% → ${(newEquityWeight*100).toFixed(1)}% (↓${((equityWeight-newEquityWeight)*100).toFixed(1)}%)\n` +
+                    `• Bonds: ${(bondWeight*100).toFixed(1)}% → ${(newBondWeight*100).toFixed(1)}% (↑${((newBondWeight-bondWeight)*100).toFixed(1)}%)\n` +
+                    `• Cash: ${(cashWeight*100).toFixed(1)}% → ${(newCashWeight*100).toFixed(1)}% (↑${((newCashWeight-cashWeight)*100).toFixed(1)}%)\n\n` +
+                    `**Analysis:**\n` +
+                    `The portfolio would experience a $${(equityLoss/1000).toFixed(0)}K loss due to equity exposure. ` +
+                    `Post-shock equity allocation of ${(newEquityWeight*100).toFixed(1)}% ${newEquityWeight < 0.50 ? 'would fall below minimum threshold, triggering rebalancing requirements.' : 'remains within acceptable range.'}\n\n` +
+                    `**Risk Assessment:** ${bondWeight > 0.30 ? 'Good bond diversification provides downside cushion.' : 'Consider increasing bond allocation for better protection.'}`;
+            },
+            
+            riskAnalysis: (portfolio, allocation) => {
+                const holdings = portfolio.holdings;
+                const maxPosition = Math.max(...holdings.map(h => h.weight));
+                const topHolding = holdings.find(h => h.weight === maxPosition);
+                
+                // Sector concentration
+                const sectors = {};
+                holdings.forEach(h => {
+                    if (h.assetClass === 'Equity') {
+                        sectors[h.sector] = (sectors[h.sector] || 0) + h.weight;
+                    }
+                });
+                const maxSector = Object.keys(sectors).reduce((a, b) => sectors[a] > sectors[b] ? a : b, '');
+                
+                return `⚠️ **Portfolio Risk Analysis**\n\n` +
+                    `**Concentration Risks:**\n` +
+                    `• Largest Position: ${topHolding.name} at ${(maxPosition*100).toFixed(1)}%\n` +
+                    `• Top Sector: ${maxSector} at ${(sectors[maxSector]*100).toFixed(1)}% of portfolio\n` +
+                    `• Single-name risk: ${maxPosition > 0.15 ? 'HIGH - Consider reducing position' : 'Acceptable'}\n\n` +
+                    `**Tillgångsklass Exposure:**\n` +
+                    `• Equity: ${(allocation['Equity']*100).toFixed(1)}% ${allocation['Equity'] > 0.70 ? '(HIGH - Elevated volatility risk)' : '(Moderate)'}\n` +
+                    `• Bonds: ${(allocation['Bond']*100).toFixed(1)}% ${allocation['Bond'] < 0.30 ? '(LOW - Limited downside protection)' : '(Good diversification)'}\n` +
+                    `• Cash: ${(allocation['Cash']*100).toFixed(1)}% ${allocation['Cash'] < 0.03 ? '(LOW - Liquidity concern)' : '(Adequate buffer)'}\n\n` +
+                    `**Key Risks:**\n` +
+                    `1. Technology sector concentration (${(sectors['Technology']*100).toFixed(1)}% of portfolio)\n` +
+                    `2. Interest rate sensitivity from ${(allocation['Bond']*100).toFixed(1)}% bond allocation\n` +
+                    `3. Market volatility exposure from equity positions\n\n` +
+                    `**Mitigation Recommendations:**\n` +
+                    `• Diversify across sectors (reduce Technology concentration)\n` +
+                    `• Maintain 5-10% cash buffer for liquidity\n` +
+                    `• Consider adding international equity exposure`;
+            },
+            
+            explainTrades: (driftAnalysis, portfolio) => {
+                const trades = [];
+                const totalValue = portfolio.totalValue;
+                
+                driftAnalysis.forEach(d => {
+                    if (!d.withinTolerance) {
+                        const tradeDiff = (d.target - d.current) * totalValue;
+                        trades.push({
+                            assetClass: d.assetClass,
+                            action: tradeDiff > 0 ? 'BUY' : 'SELL',
+                            amount: Math.abs(tradeDiff),
+                            rationale: `Restore ${d.assetClass} from ${(d.current*100).toFixed(1)}% to ${(d.target*100).toFixed(1)}%`
+                        });
+                    }
+                });
+                
+                if (trades.length === 0) {
+                    return "No trades recommended - portfolio is within tolerance bands.";
+                }
+                
+                let response = "💼 **Trade Recommendations**\n\n";
+                trades.forEach((t, i) => {
+                    response += `${i+1}. ${t.action} ${t.assetClass}: $${(t.amount/1000).toFixed(0)}K\n`;
+                    response += `   → ${t.rationale}\n\n`;
+                });
+                
+                const totalTurnover = trades.reduce((sum, t) => sum + (t.action === 'BUY' ? t.amount : 0), 0);
+                response += `**Execution Details:**\n`;
+                response += `• Total Turnover: $${(totalTurnover/1000).toFixed(0)}K (${(totalTurnover/totalValue*100).toFixed(1)}% of portfolio)\n`;
+                response += `• Estimated Costs: $${(totalTurnover*0.001).toFixed(0)} (10 bps assumption)\n`;
+                response += `• Recommendation: Execute via VWAP algorithm to minimize market impact`;
+                
+                return response;
+            },
+            
+            portfolioSummary: (portfolio, allocation, driftAnalysis) => {
+                const needsRebalancing = driftAnalysis.some(d => !d.withinTolerance);
+                
+                return `📋 **Portfolio Summary: ${portfolio.name}**\n\n` +
+                    `**Client:** ${portfolio.client}\n` +
+                    `**Total Assets:** $${(portfolio.totalValue/1000000).toFixed(2)}M\n` +
+                    `**Holdings:** ${portfolio.holdings.length} securities\n\n` +
+                    `**Current Allocation:**\n` +
+                    Object.entries(allocation).map(([ac, w]) => `• ${ac}: ${(w*100).toFixed(1)}%`).join('\n') + '\n\n' +
+                    `**Compliance Status:** ${needsRebalancing ? '⚠️ Rebalancing Required' : '✅ Compliant'}\n` +
+                    `**Mandate:** ${portfolio.holdings.length > 0 ? 'Balanced Growth (60/35/5)' : 'N/A'}\n\n` +
+                    `**Recent Activity:**\n` +
+                    `• Last Rebalanced: 14 days ago\n` +
+                    `• YTD Performance: +5.2%\n` +
+                    `• Tracking Error: 0.8%`;
+            },
+            
+            clientCommentary: (portfolio, driftAnalysis) => {
+                const needsRebalancing = driftAnalysis.some(d => !d.withinTolerance);
+                const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                
+                return `📝 **Client Portfolio Commentary**\n` +
+                    `${date}\n\n` +
+                    `Dear Valued Client,\n\n` +
+                    `Your portfolio continues to be managed in accordance with your investment mandate and risk objectives. ` +
+                    `As of today, your portfolio value stands at $${(portfolio.totalValue/1000000).toFixed(2)}M, ` +
+                    `representing a year-to-date gain of 5.2%.\n\n` +
+                    (needsRebalancing ? 
+                        `We have identified that your portfolio has drifted from target allocations due to market performance. ` +
+                        `We recommend executing a rebalancing to restore your strategic asset allocation and maintain your risk profile. ` +
+                        `This will involve modest trading to bring allocations back to target ranges.\n\n` :
+                        `Your portfolio remains well-positioned and compliant with all mandate guidelines. ` +
+                        `Asset allocations are within prescribed ranges and no immediate action is required.\n\n`) +
+                    `We continue to monitor your portfolio daily and will keep you informed of any significant developments. ` +
+                    `Please contact us if you have any questions or would like to discuss your portfolio in detail.\n\n` +
+                    `Best regards,\n` +
+                    `Portfolio Management Team`;
+            },
+            
+            complianceCheck: (driftAnalysis) => {
+                const breaches = driftAnalysis.filter(d => !d.inRange);
+                const warnings = driftAnalysis.filter(d => d.inRange && !d.withinTolerance);
+                
+                return `🔍 **Compliance Check Results**\n\n` +
+                    `**Status:** ${breaches.length === 0 ? '✅ PASS' : '❌ FAIL'}\n\n` +
+                    (breaches.length > 0 ? 
+                        `**Breaches (${breaches.length}):**\n` +
+                        breaches.map(b => `• ${b.assetClass}: ${(b.current*100).toFixed(1)}% ${b.current < b.target ? 'below minimum' : 'exceeds maximum'}`).join('\n') + '\n\n' :
+                        '') +
+                    (warnings.length > 0 ?
+                        `**Warnings (${warnings.length}):**\n` +
+                        warnings.map(w => `• ${w.assetClass}: Drift of ${(w.drift*100).toFixed(2)}% exceeds tolerance`).join('\n') + '\n\n' :
+                        '**No warnings**\n\n') +
+                    `**Mandatefterlvnad:**\n` +
+                    driftAnalysis.map(d => 
+                        `• ${d.assetClass}: ${d.inRange ? '✓' : '✗'} ${(d.current*100).toFixed(1)}% (range: ${(d.target*100-5).toFixed(0)}-${(d.target*100+5).toFixed(0)}%)`
+                    ).join('\n');
+            },
+            
+            processRecommendations: () => {
+                return `💡 **Process Improvement Recommendations**\n\n` +
+                    `**Operational Efficiency:**\n` +
+                    `1. Automate daily drift monitoring with email alerts\n` +
+                    `2. Implement threshold-based rebalancing triggers\n` +
+                    `3. Use VWAP algorithms for trades >$100K to reduce market impact\n\n` +
+                    `**Risk Management:**\n` +
+                    `4. Add sector concentration limits (max 40% per sector)\n` +
+                    `5. Implement position size limits (max 10% per security)\n` +
+                    `6. Regular stress testing (monthly scenario analysis)\n\n` +
+                    `**Client Service:**\n` +
+                    `7. Automated quarterly performance reports\n` +
+                    `8. Real-time client portal access to holdings\n` +
+                    `9. Monthly compliance attestation documentation\n\n` +
+                    `**Technology:**\n` +
+                    `10. API integration with order management system\n` +
+                    `11. Real-time market data feeds\n` +
+                    `12. Automated reconciliation with custodian\n\n` +
+                    `**Expected Impact:** 60% reduction in operational time, improved compliance, enhanced client transparency.`;
+            },
+            
+            defaultResponse: () => {
+                return `👋 I'm your AI portfolio assistant. I can help you with:\n\n` +
+                    `📊 **Analysis**\n` +
+                    `• "Why is this portfolio out of mandate?"\n` +
+                    `• "What are the main risks?"\n` +
+                    `• "Analyze sector concentration"\n\n` +
+                    `📉 **Scenarios**\n` +
+                    `• "What happens if equities drop 10%?"\n` +
+                    `• "Model a rate increase scenario"\n\n` +
+                    `💼 **Rebalancing**\n` +
+                    `• "Explain the recommended trades"\n` +
+                    `• "Generate client commentary"\n\n` +
+                    `⚙️ **Operations**\n` +
+                    `• "Suggest process improvements"\n` +
+                    `• "Check compliance status"\n\n` +
+                    `What would you like to explore?`;
+            }
+        };
+
+        // ==================== VIEW COMPONENTS ====================
+        
+        // Dashboard Component
+        const Dashboard = ({ portfolio, mandate, onRebalance }) => {
+            const allocation = useMemo(() => {
+                const result = {};
+                portfolio.holdings.forEach(h => {
+                    result[h.assetClass] = (result[h.assetClass] || 0) + h.weight;
+                });
+                return result;
+            }, [portfolio]);
+
+            const driftAnalysis = useMemo(() => {
+                return mandate.allocations.map(rule => {
+                    const current = allocation[rule.assetClass] || 0;
+                    const drift = current - rule.target;
+                    const driftPct = rule.target !== 0 ? (drift / rule.target) * 100 : 0;
+                    const inRange = current >= rule.min && current <= rule.max;
+                    const withinTolerance = Math.abs(drift) <= rule.tolerance;
+                    
+                    return {
+                        ...rule,
+                        current,
+                        drift,
+                        driftPct,
+                        inRange,
+                        withinTolerance,
+                        status: !inRange ? 'danger' : !withinTolerance ? 'warning' : 'success'
+                    };
+                });
+            }, [allocation, mandate]);
+
+            const needsRebalancing = driftAnalysis.some(d => !d.withinTolerance);
+
+            const chartData = mandate.allocations.map(rule => ({
+                name: rule.assetClass,
+                Current: ((allocation[rule.assetClass] || 0) * 100).toFixed(1),
+                Target: (rule.target * 100).toFixed(1),
+            }));
+
+            const pieData = Object.entries(allocation).map(([name, value]) => ({
+                name,
+                value: parseFloat((value * 100).toFixed(1)) || 0
+            }));
+
+            const COLORS = {
+                'Equity': '#3B82F6',
+                'Bond': '#10B981',
+                'Cash': '#F59E0B',
+            };
+
+            return (
+                <div className="fade-in">
+                    <div className="header">
+                        <h1>Portfolio Dashboard</h1>
+                        <p>Monitor portfolio allocations and compliance status</p>
+                    </div>
+
+                    <div className="stats-grid">
+                        <div className="stat-card">
+                            <div className="stat-header">
+                                <div>
+                                    <div className="stat-label">Total Portfolio Value</div>
+                                    <div className="stat-value">${(portfolio.totalValue / 1000000).toFixed(2)}M</div>
+                                    <div className="stat-change positive">
+                                        ↑ +5.2% YTD
+                                    </div>
+                                </div>
+                                <div className="stat-icon" style={{background: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6'}}>
+                                    $
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="stat-card">
+                            <div className="stat-header">
+                                <div>
+                                    <div className="stat-label">Total Holdings</div>
+                                    <div className="stat-value">{portfolio.holdings.length}</div>
+                                    <div className="stat-change">
+                                        Across {Object.keys(allocation).length} asset classes
+                                    </div>
+                                </div>
+                                <div className="stat-icon" style={{background: 'rgba(16, 185, 129, 0.1)', color: '#10B981'}}>
+                                    📊
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="stat-card">
+                            <div className="stat-header">
+                                <div>
+                                    <div className="stat-label">Compliance Status</div>
+                                    <div className="stat-value">{needsRebalancing ? 'Drift' : 'Compliant'}</div>
+                                    <div className={`stat-change ${needsRebalancing ? 'negative' : 'positive'}`}>
+                                        {needsRebalancing ? '⚠️ Rebalancing required' : '✓ Within tolerance'}
+                                    </div>
+                                </div>
+                                <div className="stat-icon" style={{background: needsRebalancing ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: needsRebalancing ? '#EF4444' : '#10B981'}}>
+                                    {needsRebalancing ? '⚠️' : '✓'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="stat-card">
+                            <div className="stat-header">
+                                <div>
+                                    <div className="stat-label">Last Rebalanced</div>
+                                    <div className="stat-value">14</div>
+                                    <div className="stat-change">
+                                        Days ago
+                                    </div>
+                                </div>
+                                <div className="stat-icon" style={{background: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B'}}>
+                                    📅
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <div className="card-header">
+                            <h2 className="card-title">Current vs Target Allocation</h2>
+                            {needsRebalancing && (
+                                <button className="btn btn-primary" onClick={onRebalance}>
+                                    🔄 Calculate Rebalancing
+                                </button>
+                            )}
+                        </div>
+                        <div className="chart-container">
+                            <BarChart chartData={chartData} />
+                        </div>
+                    </div>
+
+                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem'}}>
+                        <div className="card">
+                            <h2 className="card-title" style={{marginBottom: '1.5rem'}}>Tillgångsallokering</h2>
+                            <div className="chart-container">
+                                <PieChart pieData={pieData} colors={COLORS} />
+                            </div>
+                        </div>
+
+                        <div className="card">
+                            <h2 className="card-title" style={{marginBottom: '1.5rem'}}>Drift Analysis</h2>
+                            {driftAnalysis.map((d, i) => (
+                                <div key={i} style={{marginBottom: '1.5rem'}}>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem'}}>
+                                        <span style={{fontWeight: 600}}>{d.assetClass}</span>
+                                        <span className={`badge badge-${d.status}`}>
+                                            {d.drift >= 0 ? '+' : ''}{(d.drift * 100).toFixed(2)}%
+                                        </span>
+                                    </div>
+                                    <div style={{fontSize: '0.875rem', color: '#64748B'}}>
+                                        Current: {(d.current * 100).toFixed(1)}% | Target: {(d.target * 100).toFixed(1)}%
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <h2 className="card-title" style={{marginBottom: '1.5rem'}}>Holdings</h2>
+                        <div className="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Security</th>
+                                        <th>ISIN</th>
+                                        <th>Tillgångsklass</th>
+                                        <th>Market Value</th>
+                                        <th>Weight</th>
+                                        <th>Sector</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {portfolio.holdings.map((h, i) => (
+                                        <tr key={h.isin}>
+                                            <td style={{fontWeight: 600}}>{h.name}</td>
+                                            <td style={{fontFamily: 'monospace', fontSize: '0.875rem'}}>{h.isin}</td>
+                                            <td><span className="badge badge-info">{h.assetClass}</span></td>
+                                            <td>${h.value.toLocaleString()}</td>
+                                            <td>{(h.weight * 100).toFixed(2)}%</td>
+                                            <td>{h.sector}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Rebalancing View Component
+        const RebalancingView = ({ portfolio, mandate }) => {
+            const [rebalanceData, setRebalanceData] = useState(null);
+            const [calculating, setCalculating] = useState(false);
+            
+            // Calculate allocation and drift
+            const { allocation, driftAnalysis } = useMemo(() => {
+                const alloc = {};
+                portfolio.holdings.forEach(h => {
+                    alloc[h.assetClass] = (alloc[h.assetClass] || 0) + h.weight;
+                });
+                
+                const drift = mandate.allocations.map(rule => {
+                    const current = alloc[rule.assetClass] || 0;
+                    const driftAmount = current - rule.target;
+                    return {
+                        ...rule,
+                        current,
+                        drift: driftAmount,
+                        driftPct: rule.target !== 0 ? (driftAmount / rule.target) * 100 : 0,
+                        withinTolerance: Math.abs(driftAmount) <= rule.tolerance
+                    };
+                });
+                
+                return { allocation: alloc, driftAnalysis: drift };
+            }, [portfolio, mandate]);
+            
+            const runRebalancing = () => {
+                setCalculating(true);
+                
+                setTimeout(() => {
+                    // Generate trades
+                    const trades = [];
+                    const totalValue = portfolio.totalValue;
+                    
+                    driftAnalysis.forEach(d => {
+                        if (!d.withinTolerance) {
+                            const targetValue = d.target * totalValue;
+                            const currentValue = d.current * totalValue;
+                            const tradeValue = targetValue - currentValue;
+                            
+                            trades.push({
+                                assetClass: d.assetClass,
+                                action: tradeValue > 0 ? 'BUY' : 'SELL',
+                                currentAllocation: d.current,
+                                targetAllocation: d.target,
+                                tradeValue: Math.abs(tradeValue),
+                                rationale: `Restore ${d.assetClass} from ${(d.current*100).toFixed(1)}% to ${(d.target*100).toFixed(1)}%`
+                            });
+                        }
+                    });
+                    
+                    const turnover = trades.reduce((sum, t) => sum + (t.action === 'BUY' ? t.tradeValue : 0), 0);
+                    
+                    setRebalanceData({
+                        trades,
+                        turnover,
+                        transactionCost: turnover * 0.001,
+                        beforeAllocation: allocation,
+                        afterAllocation: mandate.allocations.reduce((acc, r) => {
+                            acc[r.assetClass] = r.target;
+                            return acc;
+                        }, {})
+                    });
+                    
+                    setCalculating(false);
+                }, 1500);
+            };
+            
+            return (
+                <div className="fade-in">
+                    <div className="header">
+                        <h1>Portfolio Rebalancing</h1>
+                        <p>Analyze drift and generate trade recommendations</p>
+                    </div>
+                    
+                    <div className="card">
+                        <div className="card-header">
+                            <h2 className="card-title">Drift Analysis</h2>
+                            <button className="btn btn-primary" onClick={runRebalancing} disabled={calculating}>
+                                {calculating ? <span className="loading-spinner"></span> : '🔄'} Calculate Rebalancing
+                            </button>
+                        </div>
+                        
+                        <div className="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Tillgångsklass</th>
+                                        <th>Current</th>
+                                        <th>Mål</th>
+                                        <th>Drift</th>
+                                        <th>Nuvarande värde</th>
+                                        <th>Målvärde</th>
+                                        <th>Köp/Sälj</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {driftAnalysis.map((d, i) => {
+                                        const currentValue = d.current * portfolio.totalValue;
+                                        const targetValue = d.target * portfolio.totalValue;
+                                        const tradeValue = targetValue - currentValue;
+                                        const action = tradeValue > 0 ? 'KÖP' : 'SÄLJ';
+                                        
+                                        return (
+                                            <tr key={i}>
+                                                <td style={{fontWeight: 600}}>{d.assetClass}</td>
+                                                <td>{(d.current * 100).toFixed(2)}%</td>
+                                                <td>{(d.target * 100).toFixed(1)}%</td>
+                                                <td style={{color: Math.abs(d.drift) > d.tolerance ? '#EF4444' : '#10B981'}}>
+                                                    {d.drift >= 0 ? '+' : ''}{(d.drift * 100).toFixed(2)}%
+                                                </td>
+                                                <td>{(currentValue / 1000000).toFixed(2)} Mkr</td>
+                                                <td>{(targetValue / 1000000).toFixed(2)} Mkr</td>
+                                                <td style={{fontWeight: 600, color: tradeValue > 0 ? '#10B981' : '#EF4444'}}>
+                                                    {Math.abs(tradeValue) < 10000 ? '—' : `${action} ${(Math.abs(tradeValue) / 1000000).toFixed(2)} Mkr`}
+                                                </td>
+                                                <td>
+                                                    <span className={`badge badge-${d.withinTolerance ? 'success' : 'warning'}`}>
+                                                        {d.withinTolerance ? 'OK' : 'REBALANCE'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {calculating && (
+                        <div className="progress-indicator">
+                            <span className="loading-spinner"></span>
+                            <span>Optimizing rebalancing strategy...</span>
+                        </div>
+                    )}
+                    
+                    {rebalanceData && (
+                        <>
+                            <div className="stats-grid">
+                                <div className="stat-card">
+                                    <div className="stat-label">Total Trades</div>
+                                    <div className="stat-value">{rebalanceData.trades.length}</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Portfolio Turnover</div>
+                                    <div className="stat-value">${(rebalanceData.turnover / 1000000).toFixed(2)}M</div>
+                                    <div style={{fontSize: '0.875rem', color: '#64748B'}}>
+                                        {(rebalanceData.turnover / portfolio.totalValue * 100).toFixed(1)}% of portfolio
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Est. Transaction Cost</div>
+                                    <div className="stat-value">${rebalanceData.transactionCost.toFixed(0)}</div>
+                                    <div style={{fontSize: '0.875rem', color: '#64748B'}}>
+                                        {(rebalanceData.transactionCost / rebalanceData.turnover * 10000).toFixed(1)} bps
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Compliance</div>
+                                    <div className="stat-value"><span className="badge badge-success">PASS</span></div>
+                                </div>
+                            </div>
+                            
+                            <div className="card">
+                                <h2 className="card-title" style={{marginBottom: '1.5rem'}}>Trade Recommendations</h2>
+                                <div className="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Tillgångsklass</th>
+                                                <th>Åtgärd</th>
+                                                <th>Current</th>
+                                                <th>Mål</th>
+                                                <th>Trade Value</th>
+                                                <th>Rationale</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {rebalanceData.trades.map((t, i) => (
+                                                <tr key={i}>
+                                                    <td><span className="badge badge-info">{t.assetClass}</span></td>
+                                                    <td>
+                                                        <span className={`badge badge-${t.action === 'BUY' ? 'success' : 'danger'}`}>
+                                                            {t.action}
+                                                        </span>
+                                                    </td>
+                                                    <td>{(t.currentAllocation * 100).toFixed(1)}%</td>
+                                                    <td>{(t.targetAllocation * 100).toFixed(1)}%</td>
+                                                    <td style={{fontWeight: 600}}>${t.tradeValue.toLocaleString()}</td>
+                                                    <td>{t.rationale}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div style={{marginTop: '1.5rem', display: 'flex', gap: '1rem'}}>
+                                    <button className="btn btn-success">✓ Approve & Execute</button>
+                                    <button className="btn btn-secondary">📥 Export Trade List</button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            );
+        };
+
+        // Trade History Component
+        const TradeHistory = () => {
+            const [filter, setFilter] = useState('ALL');
+            
+            const filteredTrades = mockTradeHistory.filter(t => {
+                if (filter === 'ALL') return true;
+                return t.status === filter;
+            });
+            
+            return (
+                <div className="fade-in">
+                    <div className="header">
+                        <h1>Trade History</h1>
+                        <p>View all portfolio transactions</p>
+                    </div>
+                    
+                    <div className="card">
+                        <div className="card-header">
+                            <h2 className="card-title">Recent Trades</h2>
+                            <div style={{display: 'flex', gap: '0.5rem'}}>
+                                <button 
+                                    className={`btn ${filter === 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
+                                    onClick={() => setFilter('ALL')}
+                                >
+                                    All
+                                </button>
+                                <button 
+                                    className={`btn ${filter === 'EXECUTED' ? 'btn-primary' : 'btn-secondary'}`}
+                                    onClick={() => setFilter('EXECUTED')}
+                                >
+                                    Executed
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Trade ID</th>
+                                        <th>Portfolio</th>
+                                        <th>Instrument</th>
+                                        <th>Åtgärd</th>
+                                        <th>Quantity</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredTrades.map((trade) => (
+                                        <tr key={trade.id}>
+                                            <td>{trade.date}</td>
+                                            <td style={{fontFamily: 'monospace', fontSize: '0.875rem'}}>{trade.id}</td>
+                                            <td>{trade.portfolio}</td>
+                                            <td style={{fontWeight: 600}}>{trade.instrument}</td>
+                                            <td>
+                                                <span className={`badge badge-${trade.action === 'BUY' ? 'success' : 'danger'}`}>
+                                                    {trade.action}
+                                                </span>
+                                            </td>
+                                            <td>{trade.quantity.toLocaleString()}</td>
+                                            <td>${trade.amount.toLocaleString()}</td>
+                                            <td>
+                                                <span className="badge badge-success">
+                                                    {trade.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // AI Copilot Component
+        const AICopilot = ({ portfolio, mandate }) => {
+            const [messages, setMessages] = useState([
+                {
+                    id: 1,
+                    role: 'assistant',
+                    content: 'Hello! I\'m your AI portfolio assistant. I can help you understand portfolio drift, explain rebalancing recommendations, analyze risk exposures, or run scenario analyses.\n\n💡 The AI uses built-in intelligence and can answer your questions immediately. What would you like to know?',
+                    timestamp: new Date().toISOString()
+                }
+            ]);
+            const [input, setInput] = useState('');
+            const [nextId, setNextId] = useState(2);
+            const [isLoading, setIsLoading] = useState(false);
+            const [apiKeySet, setApiKeySet] = useState(false);
+            const messagesEndRef = useRef(null);
+            
+            useEffect(() => {
+                // Check if API key is set
+                setApiKeySet(AI_CONFIG.apiKey && AI_CONFIG.apiKey.trim() !== '');
+            }, []);
+            
+            const scrollToBottom = () => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            };
+            
+            useEffect(() => {
+                scrollToBottom();
+            }, [messages]);
+
+            const callClaudeAPI = async (userMessage, portfolioContext) => {
+                if (!AI_CONFIG.apiKey || AI_CONFIG.apiKey.trim() === '') {
+                    throw new Error('API key not configured. Please add your Anthropic API key to AI_CONFIG.apiKey');
+                }
+
+                // Calculate allocation for context
+                const allocation = {};
+                portfolio.holdings.forEach(h => {
+                    allocation[h.assetClass] = (allocation[h.assetClass] || 0) + h.weight;
+                });
+
+                // Calculate drift analysis for context
+                const driftAnalysis = mandate.allocations.map(rule => {
+                    const current = allocation[rule.assetClass] || 0;
+                    const drift = current - rule.target;
+                    const withinTolerance = Math.abs(drift) <= rule.tolerance;
+                    const inRange = current >= rule.min && current <= rule.max;
+                    
+                    return {
+                        assetClass: rule.assetClass,
+                        current: (current * 100).toFixed(2) + '%',
+                        target: (rule.target * 100).toFixed(1) + '%',
+                        drift: (drift * 100).toFixed(2) + '%',
+                        withinTolerance,
+                        inRange
+                    };
+                });
+
+                // Build context for Claude
+                const systemPrompt = `You are an expert portfolio management AI assistant. You help portfolio managers analyze portfolios, understand drift, plan rebalancing, and assess risk.
+
+Current Portfolio Context:
+- Client: ${portfolio.client}
+- Portfolio Name: ${portfolio.name}
+- Total Value: $${(portfolio.totalValue / 1000000).toFixed(2)}M
+- Number of Holdings: ${portfolio.holdings.length}
+
+Current Allocation:
+${Object.entries(allocation).map(([ac, w]) => `- ${ac}: ${(w * 100).toFixed(2)}%`).join('\n')}
+
+Target Mandate:
+${mandate.allocations.map(r => `- ${r.assetClass}: ${(r.target * 100).toFixed(1)}% (Range: ${(r.min * 100).toFixed(1)}-${(r.max * 100).toFixed(1)}%, Tolerance: ±${(r.tolerance * 100).toFixed(1)}%)`).join('\n')}
+
+Drift Analysis:
+${driftAnalysis.map(d => `- ${d.assetClass}: Current ${d.current}, Target ${d.target}, Drift ${d.drift}, Status: ${d.withinTolerance ? 'OK' : 'REBALANCE NEEDED'}`).join('\n')}
+
+Provide clear, professional, and actionable insights. Use bullet points and formatting where appropriate.`;
+
+                const requestBody = {
+                    model: AI_CONFIG.model,
+                    max_tokens: AI_CONFIG.maxTokens,
+                    temperature: AI_CONFIG.temperature,
+                    system: systemPrompt,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: userMessage
+                        }
+                    ]
+                };
+
+                // Use local server if enabled, otherwise direct API call
+                let apiEndpoint, headers, body;
+                
+                if (AI_CONFIG.useLocalServer) {
+                    // Call through local server to avoid CORS
+                    apiEndpoint = AI_CONFIG.localServerUrl;
+                    headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    body = JSON.stringify({
+                        apiKey: AI_CONFIG.apiKey,
+                        anthropicVersion: AI_CONFIG.anthropicVersion,
+                        body: requestBody
+                    });
+                } else {
+                    // Direct API call (may have CORS issues in browser)
+                    apiEndpoint = AI_CONFIG.apiUrl;
+                    headers = {
+                        'Content-Type': 'application/json',
+                        'x-api-key': AI_CONFIG.apiKey,
+                        'anthropic-version': AI_CONFIG.anthropicVersion
+                    };
+                    body = JSON.stringify(requestBody);
+                }
+
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: headers,
+                    body: body
+                });
+
+                if (!response.ok) {
+                    let errorMessage = `API request failed with status ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error?.message || errorMessage;
+                    } catch (e) {
+                        // If can't parse error, use status message
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                const data = await response.json();
+                return data.content[0].text;
+            };
+
+            const sendMessage = async (messageText = null) => {
+                const textToSend = messageText || input;
+                if (!textToSend.trim()) return;
+                
+                const userMessage = {
+                    id: nextId,
+                    role: 'user',
+                    content: textToSend,
+                    timestamp: new Date().toISOString()
+                };
+                
+                setMessages(prev => [...prev, userMessage]);
+                setNextId(prev => prev + 1);
+                setInput('');
+                setIsLoading(true);
+                
+                try {
+                    let aiResponse;
+                    
+                    // Try Claude API first
+                    try {
+                        aiResponse = await callClaudeAPI(textToSend, { portfolio, mandate });
+                    } catch (apiError) {
+                        console.log('API call failed, using fallback AI:', apiError);
+                        
+                        // Use built-in AI reasoning as fallback
+                        if (AI_CONFIG.enableFallback) {
+                            aiResponse = AIReasoningEngine.generateResponse(textToSend, portfolio, mandate);
+                            aiResponse = "⚡ Using Built-in AI (API unavailable)\n\n" + aiResponse;
+                        } else {
+                            throw apiError;
+                        }
+                    }
+                    
+                    const assistantMessage = {
+                        id: nextId + 1,
+                        role: 'assistant',
+                        content: aiResponse,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    setMessages(prev => [...prev, assistantMessage]);
+                    setNextId(prev => prev + 1);
+                } catch (error) {
+                    console.error('AI Error:', error);
+                    
+                    const errorMessage = {
+                        id: nextId + 1,
+                        role: 'assistant',
+                        content: `❌ Error: ${error.message}\n\nThe AI Copilot is currently unavailable. Please try again later.`,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    setMessages(prev => [...prev, errorMessage]);
+                    setNextId(prev => prev + 1);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            
+            const suggestedPrompts = [
+                "Why is this portfolio out of mandate?",
+                "What happens if equities drop 10%?",
+                "What are the main risks?",
+                "Generate client commentary",
+                "Check compliance status",
+                "Suggest process improvements"
+            ];
+            
+            const formatTimestamp = (isoString) => {
+                const date = new Date(isoString);
+                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            };
+
+            return (
+                <div className="fade-in">
+                    <div className="header">
+                        <h1>AI Portfolio Copilot</h1>
+                        <p>Ask questions about your portfolio, get insights, and run scenario analyses</p>
+                    </div>
+
+                    <div className="card" style={{borderLeft: '4px solid #3B82F6', marginBottom: '1.5rem', background: '#EFF6FF'}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                            <span style={{fontSize: '1.25rem'}}>⚡</span>
+                            <div>
+                                <strong style={{color: '#1E40AF'}}>AI Assistant Ready</strong>
+                                <p style={{fontSize: '0.875rem', color: '#1E40AF', margin: '0.25rem 0 0 0'}}>
+                                    Built-in AI powered by advanced reasoning • Works offline • Instant responses
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="chat-container">
+                        <div className="chat-messages">
+                            {messages.map((msg) => (
+                                <div key={msg.id} className={`chat-message ${msg.role}`}>
+                                    <div className="chat-avatar">
+                                        {msg.role === 'assistant' ? '🤖' : '👤'}
+                                    </div>
+                                    <div>
+                                        <div className="chat-bubble">
+                                            {msg.content.split('\n').map((line, i) => (
+                                                <div key={i}>{line || <br/>}</div>
+                                            ))}
+                                        </div>
+                                        <div className="chat-timestamp">
+                                            {formatTimestamp(msg.timestamp)}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            
+                            {isLoading && (
+                                <div className="chat-message assistant">
+                                    <div className="chat-avatar">🤖</div>
+                                    <div className="chat-bubble">
+                                        <span className="loading-spinner"></span>
+                                        <span style={{marginLeft: '0.5rem', color: '#64748B'}}>Thinking...</span>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <div ref={messagesEndRef} />
+                        </div>
+                        
+                        <div className="chat-input-container">
+                            <input
+                                type="text"
+                                className="chat-input"
+                                placeholder="Ask me anything about your portfolio..."
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        sendMessage();
+                                    }
+                                }}
+                                disabled={isLoading}
+                            />
+                            <button 
+                                className="btn btn-primary" 
+                                onClick={() => sendMessage()}
+                                disabled={!input.trim() || isLoading}
+                            >
+                                {isLoading ? 'Thinking...' : 'Send'}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="card" style={{marginTop: '1.5rem'}}>
+                        <h3 style={{fontWeight: 700, marginBottom: '1rem'}}>Suggested Questions</h3>
+                        <div className="suggested-prompts">
+                            {suggestedPrompts.map((prompt, i) => (
+                                <div 
+                                    key={i}
+                                    className="prompt-chip"
+                                    onClick={() => sendMessage(prompt)}
+                                >
+                                    💡 {prompt}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Scenarios View Component
+        const ScenariosView = ({ portfolio }) => {
+            const [equityShock, setEquityShock] = useState(0);
+            const [bondShock, setBondShock] = useState(0);
+            const [results, setResults] = useState(null);
+            
+            const runScenario = () => {
+                const allocation = {};
+                portfolio.holdings.forEach(h => {
+                    allocation[h.assetClass] = (allocation[h.assetClass] || 0) + h.weight;
+                });
+                
+                const totalValue = portfolio.totalValue;
+                const equityValue = totalValue * allocation['Equity'];
+                const bondValue = totalValue * allocation['Bond'];
+                const cashValue = totalValue * allocation['Cash'];
+                
+                const equityLoss = equityValue * (equityShock / 100);
+                const bondLoss = bondValue * (bondShock / 100);
+                const totalLoss = equityLoss + bondLoss;
+                
+                const newTotalValue = totalValue - totalLoss;
+                const impactPct = (totalLoss / totalValue) * 100;
+                
+                const newAllocation = {
+                    'Equity': (equityValue - equityLoss) / newTotalValue,
+                    'Bond': (bondValue - bondLoss) / newTotalValue,
+                    'Cash': cashValue / newTotalValue
+                };
+                
+                setResults({
+                    originalValue: totalValue,
+                    newValue: newTotalValue,
+                    loss: totalLoss,
+                    impactPct,
+                    originalAllocation: allocation,
+                    newAllocation
+                });
+            };
+            
+            useEffect(() => {
+                if (equityShock !== 0 || bondShock !== 0) {
+                    runScenario();
+                }
+            }, [equityShock, bondShock]);
+            
+            return (
+                <div className="fade-in">
+                    <div className="header">
+                        <h1>Market Scenarios</h1>
+                        <p>Simulate market shocks and analyze portfolio impact</p>
+                    </div>
+                    
+                    <div className="card">
+                        <h2 className="card-title" style={{marginBottom: '1.5rem'}}>Scenario Parameters</h2>
+                        
+                        <div className="slider-container">
+                            <div className="slider-label">
+                                <span>Equity Market Shock</span>
+                                <span style={{color: equityShock >= 0 ? '#10B981' : '#EF4444', fontWeight: 600}}>
+                                    {equityShock >= 0 ? '+' : ''}{equityShock}%
+                                </span>
+                            </div>
+                            <input 
+                                type="range" 
+                                className="slider" 
+                                min="-50" 
+                                max="50" 
+                                value={equityShock}
+                                onChange={(e) => setEquityShock(Number(e.target.value))}
+                            />
+                        </div>
+                        
+                        <div className="slider-container">
+                            <div className="slider-label">
+                                <span>Bond Market Shock</span>
+                                <span style={{color: bondShock >= 0 ? '#10B981' : '#EF4444', fontWeight: 600}}>
+                                    {bondShock >= 0 ? '+' : ''}{bondShock}%
+                                </span>
+                            </div>
+                            <input 
+                                type="range" 
+                                className="slider" 
+                                min="-30" 
+                                max="30" 
+                                value={bondShock}
+                                onChange={(e) => setBondShock(Number(e.target.value))}
+                            />
+                        </div>
+                        
+                        <div style={{marginTop: '1rem', display: 'flex', gap: '1rem'}}>
+                            <button 
+                                className="btn btn-secondary"
+                                onClick={() => {
+                                    setEquityShock(-10);
+                                    setBondShock(-5);
+                                }}
+                            >
+                                📉 Recession Scenario
+                            </button>
+                            <button 
+                                className="btn btn-secondary"
+                                onClick={() => {
+                                    setEquityShock(-20);
+                                    setBondShock(10);
+                                }}
+                            >
+                                ⚠️ Crisis Scenario
+                            </button>
+                            <button 
+                                className="btn btn-secondary"
+                                onClick={() => {
+                                    setEquityShock(0);
+                                    setBondShock(0);
+                                }}
+                            >
+                                🔄 Reset
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {results && (
+                        <>
+                            <div className="stats-grid">
+                                <div className="stat-card">
+                                    <div className="stat-label">Original Value</div>
+                                    <div className="stat-value">${(results.originalValue / 1000000).toFixed(2)}M</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Post-Shock Value</div>
+                                    <div className="stat-value">${(results.newValue / 1000000).toFixed(2)}M</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Total Impact</div>
+                                    <div className="stat-value" style={{color: results.loss < 0 ? '#10B981' : '#EF4444'}}>
+                                        ${Math.abs(results.loss / 1000).toFixed(0)}K
+                                    </div>
+                                    <div className={`stat-change ${results.loss < 0 ? 'positive' : 'negative'}`}>
+                                        {results.impactPct >= 0 ? '+' : ''}{results.impactPct.toFixed(2)}%
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-label">Breach Status</div>
+                                    <div className="stat-value">
+                                        <span className={`badge ${results.newAllocation['Equity'] >= 0.50 && results.newAllocation['Equity'] <= 0.70 ? 'badge-success' : 'badge-warning'}`}>
+                                            {results.newAllocation['Equity'] >= 0.50 && results.newAllocation['Equity'] <= 0.70 ? 'PASS' : 'REVIEW'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="card">
+                                <h2 className="card-title" style={{marginBottom: '1.5rem'}}>Allocation Impact</h2>
+                                <div className="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Tillgångsklass</th>
+                                                <th>Original</th>
+                                                <th>Post-Shock</th>
+                                                <th>Change</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Object.keys(results.originalAllocation).map((ac) => {
+                                                const orig = results.originalAllocation[ac];
+                                                const newVal = results.newAllocation[ac];
+                                                const change = newVal - orig;
+                                                
+                                                return (
+                                                    <tr key={ac}>
+                                                        <td style={{fontWeight: 600}}>{ac}</td>
+                                                        <td>{(orig * 100).toFixed(2)}%</td>
+                                                        <td>{(newVal * 100).toFixed(2)}%</td>
+                                                        <td style={{color: change >= 0 ? '#10B981' : '#EF4444'}}>
+                                                            {change >= 0 ? '+' : ''}{(change * 100).toFixed(2)}%
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            );
+        };
+
+        // Compliance View Component
+        const ComplianceView = ({ portfolio, mandate }) => {
+            const allocation = useMemo(() => {
+                const result = {};
+                portfolio.holdings.forEach(h => {
+                    result[h.assetClass] = (result[h.assetClass] || 0) + h.weight;
+                });
+                return result;
+            }, [portfolio]);
+            
+            const complianceChecks = useMemo(() => {
+                return mandate.allocations.map(rule => {
+                    const current = allocation[rule.assetClass] || 0;
+                    const inRange = current >= rule.min && current <= rule.max;
+                    const withinTolerance = Math.abs(current - rule.target) <= rule.tolerance;
+                    
+                    let status, severity, message;
+                    
+                    if (!inRange) {
+                        status = 'BREACH';
+                        severity = 'danger';
+                        if (current < rule.min) {
+                            message = `Below minimum threshold (${(rule.min*100).toFixed(0)}%)`;
+                        } else {
+                            message = `Exceeds maximum threshold (${(rule.max*100).toFixed(0)}%)`;
+                        }
+                    } else if (!withinTolerance) {
+                        status = 'WARNING';
+                        severity = 'warning';
+                        message = `Drift exceeds tolerance band (±${(rule.tolerance*100).toFixed(0)}%)`;
+                    } else {
+                        status = 'OK';
+                        severity = 'success';
+                        message = 'Within acceptable range';
+                    }
+                    
+                    return {
+                        rule: `${rule.assetClass} Allocation`,
+                        current: (current * 100).toFixed(2) + '%',
+                        target: (rule.target * 100).toFixed(0) + '%',
+                        range: `${(rule.min*100).toFixed(0)}-${(rule.max*100).toFixed(0)}%`,
+                        status,
+                        severity,
+                        message
+                    };
+                });
+            }, [allocation, mandate]);
+            
+            const breaches = complianceChecks.filter(c => c.status === 'BREACH');
+            const warnings = complianceChecks.filter(c => c.status === 'WARNING');
+            const passed = complianceChecks.filter(c => c.status === 'OK');
+            
+            return (
+                <div className="fade-in">
+                    <div className="header">
+                        <h1>Compliance Monitor</h1>
+                        <p>Real-time mandate compliance and breach detection</p>
+                    </div>
+                    
+                    <div className="stats-grid">
+                        <div className="stat-card">
+                            <div className="stat-label">Overall Status</div>
+                            <div className="stat-value">
+                                <span className={`badge badge-${breaches.length > 0 ? 'danger' : warnings.length > 0 ? 'warning' : 'success'}`}>
+                                    {breaches.length > 0 ? 'BREACH' : warnings.length > 0 ? 'WARNING' : 'COMPLIANT'}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">Critical Breaches</div>
+                            <div className="stat-value" style={{color: breaches.length > 0 ? '#EF4444' : '#10B981'}}>
+                                {breaches.length}
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">Warnings</div>
+                            <div className="stat-value" style={{color: warnings.length > 0 ? '#F59E0B' : '#10B981'}}>
+                                {warnings.length}
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">Passed Checks</div>
+                            <div className="stat-value" style={{color: '#10B981'}}>
+                                {passed.length}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="card">
+                        <h2 className="card-title" style={{marginBottom: '1.5rem'}}>Mandate Rules</h2>
+                        <div className="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rule</th>
+                                        <th>Current</th>
+                                        <th>Mål</th>
+                                        <th>Range</th>
+                                        <th>Status</th>
+                                        <th>Detaljer</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {complianceChecks.map((check, i) => (
+                                        <tr key={i}>
+                                            <td style={{fontWeight: 600}}>{check.rule}</td>
+                                            <td>{check.current}</td>
+                                            <td>{check.target}</td>
+                                            <td>{check.range}</td>
+                                            <td>
+                                                <span className={`badge badge-${check.severity}`}>
+                                                    {check.status}
+                                                </span>
+                                            </td>
+                                            <td>{check.message}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {breaches.length > 0 && (
+                        <div className="card" style={{borderLeft: '4px solid #EF4444'}}>
+                            <h3 style={{fontWeight: 700, marginBottom: '1rem', color: '#EF4444'}}>
+                                🔴 Action Required
+                            </h3>
+                            <p style={{marginBottom: '1rem'}}>
+                                {breaches.length} critical breach{breaches.length > 1 ? 'es' : ''} detected. 
+                                Immediate rebalancing required to restore compliance.
+                            </p>
+                            <button className="btn btn-danger">
+                                🔄 Generate Rebalancing Plan
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Morgonrutin Dashboard Component
+        const MorningRoutine = ({ portfolio, mandate, onNavigate }) => {
+            const [checklist, setChecklist] = useState(() => {
+                const saved = localStorage.getItem('morningChecklist');
+                return saved ? JSON.parse(saved) : {
+                    marketCheck: false,
+                    complianceCheck: false,
+                    rebalancingCheck: false,
+                    cashEventsCheck: false,
+                    tradesCheck: false
+                };
+            });
+
+            const toggleCheck = (item) => {
+                const newChecklist = { ...checklist, [item]: !checklist[item] };
+                setChecklist(newChecklist);
+                localStorage.setItem('morningChecklist', JSON.stringify(newChecklist));
+            };
+
+            // Calculate stats from portfolio data
+            const allocation = useMemo(() => {
+                const result = {};
+                portfolio.holdings.forEach(h => {
+                    result[h.assetClass] = (result[h.assetClass] || 0) + h.weight;
+                });
+                return result;
+            }, [portfolio]);
+
+            const complianceStatus = useMemo(() => {
+                const checks = mandate.allocations.map(rule => {
+                    const current = allocation[rule.assetClass] || 0;
+                    const inRange = current >= rule.min && current <= rule.max;
+                    const withinTolerance = Math.abs(current - rule.target) <= rule.tolerance;
+                    
+                    if (!inRange) return 'BREACH';
+                    if (!withinTolerance) return 'WARNING';
+                    return 'OK';
+                });
+                
+                return {
+                    breaches: checks.filter(s => s === 'BREACH').length,
+                    warnings: checks.filter(s => s === 'WARNING').length,
+                    ok: checks.filter(s => s === 'OK').length
+                };
+            }, [allocation, mandate]);
+
+            const totalAUM = portfolio.totalValue;
+            const portfoliosNeedingAction = complianceStatus.breaches + complianceStatus.warnings;
+            const avgComplianceScore = ((complianceStatus.ok / 3) * 100).toFixed(0);
+
+            return (
+                <div className="fade-in">
+                    <div className="header">
+                        <h1>🌅 Daglig Arbetsrutin</h1>
+                        <p>Strukturerat arbetsflöde: övervakning → prioritering → utförande → dokumentation</p>
+                    </div>
+
+                    {/* Quick Stats Dashboard */}
+                    <div className="stats-grid">
+                        <div className="stat-card">
+                            <div className="stat-label">Totalt AUM</div>
+                            <div className="stat-value">${(totalAUM / 1000000).toFixed(2)}M</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">Portfolios Requiring Action</div>
+                            <div className="stat-value" style={{color: portfoliosNeedingAction > 0 ? '#EF4444' : '#10B981'}}>
+                                {portfoliosNeedingAction}
+                            </div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">Pending Cash Events</div>
+                            <div className="stat-value">0</div>
+                            <div style={{fontSize: '0.875rem', color: '#64748B'}}>NEW status</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">Avg. Compliance Score</div>
+                            <div className="stat-value" style={{color: avgComplianceScore >= 80 ? '#10B981' : avgComplianceScore >= 60 ? '#F59E0B' : '#EF4444'}}>
+                                {avgComplianceScore}%
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Daily Checklist */}
+                    <div className="card">
+                        <h2 className="card-title">📋 Kontrollista (Daglig Arbetsrutin)</h2>
+                        <div style={{marginTop: '1.5rem'}}>
+                            <div style={{display: 'flex', alignItems: 'center', padding: '1rem', borderBottom: '1px solid var(--border)', cursor: 'pointer'}} onClick={() => toggleCheck('marketCheck')}>
+                                <input type="checkbox" checked={checklist.marketCheck} onChange={() => {}} style={{marginRight: '1rem', width: '20px', height: '20px', cursor: 'pointer'}} />
+                                <span style={{fontSize: '1rem', fontWeight: checklist.marketCheck ? 400 : 600}}>Övervaka över natten positioner & marknadspåverkan</span>
+                            </div>
+                            <div style={{display: 'flex', alignItems: 'center', padding: '1rem', borderBottom: '1px solid var(--border)', cursor: 'pointer'}} onClick={() => toggleCheck('complianceCheck')}>
+                                <input type="checkbox" checked={checklist.complianceCheck} onChange={() => {}} style={{marginRight: '1rem', width: '20px', height: '20px', cursor: 'pointer'}} />
+                                <span style={{fontSize: '1rem', fontWeight: checklist.complianceCheck ? 400 : 600}}>Mandatefterlevnadskontroll (toleransband, min/max)</span>
+                            </div>
+                            <div style={{display: 'flex', alignItems: 'center', padding: '1rem', borderBottom: '1px solid var(--border)', cursor: 'pointer'}} onClick={() => toggleCheck('rebalancingCheck')}>
+                                <input type="checkbox" checked={checklist.rebalancingCheck} onChange={() => {}} style={{marginRight: '1rem', width: '20px', height: '20px', cursor: 'pointer'}} />
+                                <span style={{fontSize: '1rem', fontWeight: checklist.rebalancingCheck ? 400 : 600}}>Driftövervakning & undantagsprioritering</span>
+                            </div>
+                            <div style={{display: 'flex', alignItems: 'center', padding: '1rem', borderBottom: '1px solid var(--border)', cursor: 'pointer'}} onClick={() => toggleCheck('cashEventsCheck')}>
+                                <input type="checkbox" checked={checklist.cashEventsCheck} onChange={() => {}} style={{marginRight: '1rem', width: '20px', height: '20px', cursor: 'pointer'}} />
+                                <span style={{fontSize: '1rem', fontWeight: checklist.cashEventsCheck ? 400 : 600}}>Kassaflödesoperationer (insättningar/uttag, onboarding)</span>
+                            </div>
+                            <div style={{display: 'flex', alignItems: 'center', padding: '1rem', cursor: 'pointer'}} onClick={() => toggleCheck('tradesCheck')}>
+                                <input type="checkbox" checked={checklist.tradesCheck} onChange={() => {}} style={{marginRight: '1rem', width: '20px', height: '20px', cursor: 'pointer'}} />
+                                <span style={{fontSize: '1rem', fontWeight: checklist.tradesCheck ? 400 : 600}}>Affärsutförande avstämning & dokumentation</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Today's Priority Actions */}
+                    <div className="card">
+                        <h2 className="card-title">🎯 Today's Priority Actions</h2>
+                        <div style={{marginTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem'}}>
+                            <div style={{padding: '1.5rem', background: complianceStatus.breaches > 0 ? '#FEF2F2' : '#F0FDF4', borderRadius: '8px', border: `2px solid ${complianceStatus.breaches > 0 ? '#EF4444' : '#10B981'}`}}>
+                                <div style={{fontSize: '2rem', fontWeight: 700, color: complianceStatus.breaches > 0 ? '#EF4444' : '#10B981'}}>{complianceStatus.breaches}</div>
+                                <div style={{fontSize: '0.875rem', color: '#64748B', marginTop: '0.5rem'}}>Portfolios with BREACH status</div>
+                                <button className="btn btn-danger" style={{marginTop: '1rem', width: '100%'}} onClick={() => onNavigate('compliance')}>
+                                    View Exceptions →
+                                </button>
+                            </div>
+                            <div style={{padding: '1.5rem', background: complianceStatus.warnings > 0 ? '#FFFBEB' : '#F0FDF4', borderRadius: '8px', border: `2px solid ${complianceStatus.warnings > 0 ? '#F59E0B' : '#10B981'}`}}>
+                                <div style={{fontSize: '2rem', fontWeight: 700, color: complianceStatus.warnings > 0 ? '#F59E0B' : '#10B981'}}>{complianceStatus.warnings}</div>
+                                <div style={{fontSize: '0.875rem', color: '#64748B', marginTop: '0.5rem'}}>Portfolios with WARNING status</div>
+                                <button className="btn btn-secondary" style={{marginTop: '1rem', width: '100%'}} onClick={() => onNavigate('rebalancing')}>
+                                    Review Drift →
+                                </button>
+                            </div>
+                            <div style={{padding: '1.5rem', background: '#EFF6FF', borderRadius: '8px', border: '2px solid #3B82F6'}}>
+                                <div style={{fontSize: '2rem', fontWeight: 700, color: '#3B82F6'}}>0</div>
+                                <div style={{fontSize: '0.875rem', color: '#64748B', marginTop: '0.5rem'}}>NEW cash events</div>
+                                <button className="btn btn-secondary" style={{marginTop: '1rem', width: '100%'}} disabled>
+                                    Simulate Events →
+                                </button>
+                            </div>
+                            <div style={{padding: '1.5rem', background: '#F0FDF4', borderRadius: '8px', border: '2px solid #10B981'}}>
+                                <div style={{fontSize: '2rem', fontWeight: 700, color: '#10B981'}}>0</div>
+                                <div style={{fontSize: '0.875rem', color: '#64748B', marginTop: '0.5rem'}}>Pending trade approvals</div>
+                                <button className="btn btn-secondary" style={{marginTop: '1rem', width: '100%'}} onClick={() => onNavigate('trades')}>
+                                    View Trades →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Why It Matters */}
+                    <div className="card" style={{background: '#EFF6FF', borderLeft: '4px solid #3B82F6'}}>
+                        <div style={{display: 'flex', alignItems: 'start', gap: '1rem'}}>
+                            <span style={{fontSize: '1.5rem'}}>💡</span>
+                            <div>
+                                <strong style={{color: '#1E40AF', fontSize: '1rem'}}>Why it matters:</strong>
+                                <p style={{color: '#1E40AF', marginTop: '0.5rem', fontSize: '0.875rem'}}>
+                                    Immediate visibility into portfolios needing attention prevents compliance breaches and allows proactive client communication.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Time-Based Workflow Guide */}
+                    <div className="card">
+                        <h2 className="card-title">⏰ Time-Based Workflow Guide</h2>
+                        <div style={{marginTop: '1.5rem', position: 'relative', paddingLeft: '3rem'}}>
+                            {/* Timeline */}
+                            <div style={{position: 'absolute', left: '1rem', top: 0, bottom: 0, width: '2px', background: '#E2E8F0'}}></div>
+
+                            {/* 8:00 AM - 8:15 AM */}
+                            <div style={{position: 'relative', marginBottom: '2rem'}}>
+                                <div style={{position: 'absolute', left: '-2.2rem', top: '0.3rem', width: '12px', height: '12px', borderRadius: '50%', background: '#3B82F6', border: '3px solid white', boxShadow: '0 0 0 2px #3B82F6'}}></div>
+                                <div style={{fontWeight: 700, fontSize: '1rem', color: '#0F172A'}}>8:00 AM - 8:15 AM: System Check</div>
+                                <ul style={{marginTop: '0.5rem', marginLeft: '1rem', color: '#64748B', fontSize: '0.875rem'}}>
+                                    <li>Open Dashboard</li>
+                                    <li>Review overnight changes</li>
+                                    <li>Check compliance indicators</li>
+                                </ul>
+                            </div>
+
+                            {/* 8:15 AM - 8:30 AM */}
+                            <div style={{position: 'relative', marginBottom: '2rem'}}>
+                                <div style={{position: 'absolute', left: '-2.2rem', top: '0.3rem', width: '12px', height: '12px', borderRadius: '50%', background: '#F59E0B', border: '3px solid white', boxShadow: '0 0 0 2px #F59E0B'}}></div>
+                                <div style={{fontWeight: 700, fontSize: '1rem', color: '#0F172A'}}>8:15 AM - 8:30 AM: Priority Review</div>
+                                <ul style={{marginTop: '0.5rem', marginLeft: '1rem', color: '#64748B', fontSize: '0.875rem'}}>
+                                    <li>Exception Queue (BREACH portfolios)</li>
+                                    <li>NEW cash events</li>
+                                    <li>Pending approvals</li>
+                                </ul>
+                            </div>
+
+                            {/* 8:30 AM - 9:00 AM */}
+                            <div style={{position: 'relative'}}>
+                                <div style={{position: 'absolute', left: '-2.2rem', top: '0.3rem', width: '12px', height: '12px', borderRadius: '50%', background: '#10B981', border: '3px solid white', boxShadow: '0 0 0 2px #10B981'}}></div>
+                                <div style={{fontWeight: 700, fontSize: '1rem', color: '#0F172A'}}>8:30 AM - 9:00 AM: Action Planning</div>
+                                <ul style={{marginTop: '0.5rem', marginLeft: '1rem', color: '#64748B', fontSize: '0.875rem'}}>
+                                    <li>Identify portfolios for rebalancing</li>
+                                    <li>Simulate cash events</li>
+                                    <li>Prepare trade lists</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quick Jump Buttons */}
+                    <div className="card">
+                        <h3 style={{fontWeight: 700, marginBottom: '1rem'}}>🚀 Quick Navigation</h3>
+                        <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
+                            <button className="btn btn-primary" onClick={() => onNavigate('compliance')}>
+                                📊 Exception Queue
+                            </button>
+                            <button className="btn btn-primary" onClick={() => onNavigate('rebalancing')}>
+                                🔄 Rebalancing View
+                            </button>
+                            <button className="btn btn-primary" onClick={() => onNavigate('trades')}>
+                                📋 Trade History
+                            </button>
+                            <button className="btn btn-primary" onClick={() => onNavigate('dashboard')}>
+                                📈 Portfolio Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==================== MAIN APP COMPONENT ====================
+        
+        const App = () => {
+            const [currentView, setCurrentView] = useState('morning');
+            const [portfolio] = useState(samplePortfolio);
+            const [selectedMandateId, setSelectedMandateId] = useState(MANDATES[0].id);
+            const [showMandateEditor, setShowMandateEditor] = useState(false);
+            const [editingMandate, setEditingMandate] = useState(null);
+            const [showAuditLog, setShowAuditLog] = useState(false);
+            const [showAnalytics, setShowAnalytics] = useState(false);
+            const [autoTradeEnabled, setAutoTradeEnabled] = useState(false);
+            const [auditTrail, setAuditTrail] = useState(() => {
+                const saved = localStorage.getItem('auditTrail');
+                return saved ? JSON.parse(saved) : [];
+            });
+            
+            // Get current mandate based on selection
+            const mandate = useMemo(() => {
+                return MANDATES.find(m => m.id === selectedMandateId) || MANDATES[0];
+            }, [selectedMandateId]);
+
+            const renderView = () => {
+                switch(currentView) {
+                    case 'morning':
+                        return <MorningRoutine portfolio={portfolio} mandate={mandate} onNavigate={setCurrentView} />;
+                    case 'analytics':
+                        return <AnalyticsView portfolio={portfolio} mandate={mandate} />;
+                    case 'audit':
+                        return <AuditTrailView auditTrail={auditTrail} />;
+                    case 'automation':
+                        return <AutomationView portfolio={portfolio} mandate={mandate} />;
+                    case 'dashboard':
+                        return <Dashboard portfolio={portfolio} mandate={mandate} onRebalance={() => setCurrentView('rebalancing')} />;
+                    case 'rebalancing':
+                        return <RebalancingView portfolio={portfolio} mandate={mandate} />;
+                    case 'trades':
+                        return <TradeHistory />;
+                    case 'ai':
+                        return <AICopilot portfolio={portfolio} mandate={mandate} />;
+                    case 'scenarios':
+                        return <ScenariosView portfolio={portfolio} />;
+                    case 'compliance':
+                        return <ComplianceView portfolio={portfolio} mandate={mandate} />;
+                    default:
+                        return <MorningRoutine portfolio={portfolio} mandate={mandate} onNavigate={setCurrentView} />;
+                }
+            };
+
+            return (
+                <div className="app-container">
+                    <div className="sidebar">
+                        <div className="logo">
+                            <div className="logo-icon">RM</div>
+                            RebalanceMatrix
+                        </div>
+                        
+                        {/* Mandate Selector */}
+                        <div style={{marginBottom: '2rem', padding: '1rem', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.3)'}}>
+                            <div style={{fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(255,255,255,0.7)', marginBottom: '0.5rem', fontWeight: 600}}>
+                                Aktivt Discretionary Mandat
+                            </div>
+                            <select 
+                                value={selectedMandateId}
+                                onChange={(e) => setSelectedMandateId(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    borderRadius: '6px',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    background: 'rgba(255,255,255,0.1)',
+                                    color: 'white',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    outline: 'none'
+                                }}
+                            >
+                                {MANDATES.map(m => (
+                                    <option key={m.id} value={m.id} style={{background: '#0A0F1C', color: 'white'}}>
+                                        {m.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <div style={{marginTop: '0.5rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)'}}>
+                                {mandate.description}
+                            </div>
+                            <div style={{marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                                <span style={{fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)'}}>Riskprofil:</span>
+                                <span style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '4px',
+                                    background: mandate.riskProfile.includes('Conservative') ? 'rgba(16, 185, 129, 0.2)' : 
+                                               mandate.riskProfile.includes('Aggressive') ? 'rgba(239, 68, 68, 0.2)' : 
+                                               'rgba(245, 158, 11, 0.2)',
+                                    color: mandate.riskProfile.includes('Conservative') ? '#10B981' : 
+                                           mandate.riskProfile.includes('Aggressive') ? '#EF4444' : 
+                                           '#F59E0B'
+                                }}>
+                                    {mandate.riskProfile}
+                                </span>
+                            </div>
+                            <div style={{marginTop: '0.75rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)'}}>
+                                Målallokering: {mandate.allocations.map(a => `${(a.target*100).toFixed(0)}%`).join(' / ')}
+                            </div>
+                            <div style={{marginTop: '0.5rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)'}}>
+                                Toleransband: ±{mandate.allocations[0].tolerance * 100}% | Min/Max Controls
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    setEditingMandate(JSON.parse(JSON.stringify(mandate)));
+                                    setShowMandateEditor(true);
+                                }}
+                                style={{
+                                    width: '100%',
+                                    marginTop: '0.75rem',
+                                    padding: '0.5rem',
+                                    background: 'rgba(255,255,255,0.1)',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    borderRadius: '6px',
+                                    color: 'white',
+                                    fontSize: '0.875rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                ⚙️ Redigera Mandatimplementering
+                            </button>
+                        </div>
+                        
+                        <div className="nav-section">
+                            <div className="nav-label">Dagligt Arbetsflöde</div>
+                            <div 
+                                className={`nav-item ${currentView === 'morning' ? 'active' : ''}`} 
+                                onClick={() => setCurrentView('morning')}
+                            >
+                                🌅 Morgonrutin
+                            </div>
+                            <div 
+                                className={`nav-item ${currentView === 'analytics' ? 'active' : ''}`} 
+                                onClick={() => setCurrentView('analytics')}
+                            >
+                                📊 Analys & Prestanda
+                            </div>
+                            <div 
+                                className={`nav-item ${currentView === 'audit' ? 'active' : ''}`} 
+                                onClick={() => setCurrentView('audit')}
+                            >
+                                📜 Revisionsspår
+                            </div>
+                            <div 
+                                className={`nav-item ${currentView === 'automation' ? 'active' : ''}`} 
+                                onClick={() => setCurrentView('automation')}
+                            >
+                                🤖 Smart Automation
+                            </div>
+                        </div>
+
+                        <div className="nav-section">
+                            <div className="nav-label">Portföljoperationer</div>
+                            <div 
+                                className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`} 
+                                onClick={() => setCurrentView('dashboard')}
+                            >
+                                📊 Driftövervakning
+                            </div>
+                            <div 
+                                className={`nav-item ${currentView === 'rebalancing' ? 'active' : ''}`} 
+                                onClick={() => setCurrentView('rebalancing')}
+                            >
+                                🔄 Tillgångsallokering
+                            </div>
+                            <div 
+                                className={`nav-item ${currentView === 'trades' ? 'active' : ''}`} 
+                                onClick={() => setCurrentView('trades')}
+                            >
+                                📋 Affärsutförande
+                            </div>
+                        </div>
+
+                        <div className="nav-section">
+                            <div className="nav-label">Automation & Kontroller</div>
+                            <div 
+                                className={`nav-item ${currentView === 'ai' ? 'active' : ''}`} 
+                                onClick={() => setCurrentView('ai')}
+                            >
+                                💬 AI Verktyg
+                            </div>
+                            <div 
+                                className={`nav-item ${currentView === 'scenarios' ? 'active' : ''}`} 
+                                onClick={() => setCurrentView('scenarios')}
+                            >
+                                📈 Riskövervakning
+                            </div>
+                            <div 
+                                className={`nav-item ${currentView === 'compliance' ? 'active' : ''}`} 
+                                onClick={() => setCurrentView('compliance')}
+                            >
+                                ⚠️ Mandatefterlvnad
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="main-content">
+                        {renderView()}
+                    </div>
+
+                    {showMandateEditor && editingMandate && (
+                        <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999}} onClick={() => setShowMandateEditor(false)}>
+                            <div style={{background: 'white', borderRadius: '12px', maxWidth: '700px', width: '100%', padding: '2rem'}} onClick={(e) => e.stopPropagation()}>
+                                <h2 style={{marginBottom: '1.5rem'}}>Edit: {editingMandate.name}</h2>
+                                <table style={{width: '100%', marginBottom: '1.5rem'}}>
+                                    <thead>
+                                        <tr style={{background: '#F8FAFC'}}>
+                                            <th style={{padding: '0.75rem', textAlign: 'left'}}>Tillgång</th>
+                                            <th style={{padding: '0.75rem'}}>Mål</th>
+                                            <th style={{padding: '0.75rem'}}>Min</th>
+                                            <th style={{padding: '0.75rem'}}>Max</th>
+                                            <th style={{padding: '0.75rem'}}>Tol</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {editingMandate.allocations.map((a, i) => (
+                                            <tr key={i}>
+                                                <td style={{padding: '0.75rem'}}><strong>{a.assetClass}</strong></td>
+                                                <td style={{padding: '0.75rem'}}>
+                                                    <input type="number" value={(a.target * 100).toFixed(0)} onChange={(e) => {
+                                                        const n = [...editingMandate.allocations];
+                                                        n[i].target = parseFloat(e.target.value) / 100;
+                                                        setEditingMandate({...editingMandate, allocations: n});
+                                                    }} style={{width: '60px', padding: '0.5rem', border: '1px solid #E2E8F0', borderRadius: '4px'}} />
+                                                </td>
+                                                <td style={{padding: '0.75rem'}}>
+                                                    <input type="number" value={(a.min * 100).toFixed(0)} onChange={(e) => {
+                                                        const n = [...editingMandate.allocations];
+                                                        n[i].min = parseFloat(e.target.value) / 100;
+                                                        setEditingMandate({...editingMandate, allocations: n});
+                                                    }} style={{width: '60px', padding: '0.5rem', border: '1px solid #E2E8F0', borderRadius: '4px'}} />
+                                                </td>
+                                                <td style={{padding: '0.75rem'}}>
+                                                    <input type="number" value={(a.max * 100).toFixed(0)} onChange={(e) => {
+                                                        const n = [...editingMandate.allocations];
+                                                        n[i].max = parseFloat(e.target.value) / 100;
+                                                        setEditingMandate({...editingMandate, allocations: n});
+                                                    }} style={{width: '60px', padding: '0.5rem', border: '1px solid #E2E8F0', borderRadius: '4px'}} />
+                                                </td>
+                                                <td style={{padding: '0.75rem'}}>
+                                                    <input type="number" value={(a.tolerance * 100).toFixed(0)} onChange={(e) => {
+                                                        const n = [...editingMandate.allocations];
+                                                        n[i].tolerance = parseFloat(e.target.value) / 100;
+                                                        setEditingMandate({...editingMandate, allocations: n});
+                                                    }} style={{width: '60px', padding: '0.5rem', border: '1px solid #E2E8F0', borderRadius: '4px'}} />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                <div style={{display: 'flex', gap: '1rem'}}>
+                                    <button onClick={() => {
+                                        MANDATES[MANDATES.findIndex(m => m.id === editingMandate.id)] = editingMandate;
+                                        logAudit('MANDATE_UPDATE', {
+                                            mandateId: editingMandate.id,
+                                            name: editingMandate.name,
+                                            changes: editingMandate.allocations
+                                        });
+                                        setShowMandateEditor(false);
+                                    }} className="btn btn-success">Spara</button>
+                                    <button onClick={() => setShowMandateEditor(false)} className="btn btn-secondary">Avbryt</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // ==================== NEW VIEWS ====================
+
+        // Analytics View
+        function AnalyticsView({ portfolio, mandate }) {
+            const performance = calculatePerformance(portfolio);
+            const risk = calculateRiskMetrics(portfolio);
+
+            return (
+                <div className="fade-in">
+                    <div className="header">
+                        <h1>📊 Analys & Prestanda</h1>
+                        <p>Riskmått, attributionsanalys och prestationsspårning</p>
+                    </div>
+
+                    <div className="stats-grid">
+                        <div className="stat-card">
+                            <div className="stat-label">30-dagars avkastning</div>
+                            <div className="stat-value">{performance.totalReturn.toFixed(2)}%</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">Sharpe-kvot</div>
+                            <div className="stat-value">{risk.sharpeRatio.toFixed(2)}</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">Volatilitet</div>
+                            <div className="stat-value">{risk.volatility.toFixed(1)}%</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-label">VaR (95%)</div>
+                            <div className="stat-value">${(risk.var95 / 1000).toFixed(0)}K</div>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <div className="card-header">
+                            <h2 className="card-title">Riskmått</h2>
+                            <button className="btn btn-primary" onClick={() => generatePDF('Risk Report', `
+                                <h2>Portfolio Risk Analysis</h2>
+                                <table>
+                                    <tr><th>Metric</th><th>Value</th></tr>
+                                    <tr><td>Volatilitet</td><td>${risk.volatility.toFixed(2)}%</td></tr>
+                                    <tr><td>Sharpe-kvot</td><td>${risk.sharpeRatio.toFixed(2)}</td></tr>
+                                    <tr><td>Expected Return</td><td>${risk.expectedReturn.toFixed(2)}%</td></tr>
+                                    <tr><td>VaR (95%)</td><td>$${(risk.var95 / 1000).toFixed(0)}K</td></tr>
+                                    <tr><td>Beta</td><td>${risk.beta.toFixed(2)}</td></tr>
+                                </table>
+                            `)}>📄 Exportera PDF</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr><th>Metric</th><th>Value</th><th>Description</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Volatilitet</td><td>{risk.volatility.toFixed(2)}%</td><td>Annualized standard deviation</td></tr>
+                                <tr><td>Expected Return</td><td>{risk.expectedReturn.toFixed(2)}%</td><td>Weighted average return</td></tr>
+                                <tr><td>Sharpe-kvot</td><td>{risk.sharpeRatio.toFixed(2)}</td><td>Risk-adjusted return</td></tr>
+                                <tr><td>VaR (95%)</td><td>${(risk.var95 / 1000).toFixed(0)}K</td><td>Maximum 1-day loss (95% confidence)</td></tr>
+                                <tr><td>Beta</td><td>{risk.beta.toFixed(2)}</td><td>Market correlation</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        // Revisionsspår View
+        function AuditTrailView({ auditTrail }) {
+            return (
+                <div className="fade-in">
+                    <div className="header">
+                        <h1>📜 Revisionsspår</h1>
+                        <p>Komplett historik över alla åtgärder och mandatändringar</p>
+                    </div>
+
+                    <div className="card">
+                        <div className="card-header">
+                            <h2 className="card-title">Aktivitetslogg</h2>
+                            <button className="btn btn-primary" onClick={() => downloadCSV(auditTrail, 'audit-trail.csv')}>
+                                📥 Exportera CSV
+                            </button>
+                        </div>
+                        {auditTrail.length === 0 ? (
+                            <p style={{padding: '2rem', textAlign: 'center', color: '#64748B'}}>Inga granskningsposter ännu. Åtgärder loggas här.</p>
+                        ) : (
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Tidsstämpel</th>
+                                        <th>Användare</th>
+                                        <th>Åtgärd</th>
+                                        <th>Detaljer</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {auditTrail.slice().reverse().map((entry, i) => (
+                                        <tr key={i}>
+                                            <td>{new Date(entry.timestamp).toLocaleString('sv-SE')}</td>
+                                            <td>{entry.user}</td>
+                                            <td><span className="badge badge-info">{entry.action}</span></td>
+                                            <td>{JSON.stringify(entry.details)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Automation View
+        function AutomationView({ portfolio, mandate }) {
+            const [threshold, setThreshold] = useState(5);
+            const autoTrades = autoGenerateTrades(portfolio, mandate, threshold / 100);
+
+            return (
+                <div className="fade-in">
+                    <div className="header">
+                        <h1>🤖 Smart Automation</h1>
+                        <p>Automatisk affärsgenerering och efterlevnadsövervakning</p>
+                    </div>
+
+                    <div className="card">
+                        <h2 className="card-title">Auto-handels inställningar</h2>
+                        <div style={{marginTop: '1.5rem'}}>
+                            <label style={{fontWeight: 600, marginBottom: '0.5rem', display: 'block'}}>
+                                Drifttröskel: {threshold}%
+                            </label>
+                            <input 
+                                type="range" 
+                                min="1" 
+                                max="10" 
+                                value={threshold}
+                                onChange={(e) => setThreshold(e.target.value)}
+                                style={{width: '100%'}}
+                            />
+                            <p style={{fontSize: '0.875rem', color: '#64748B', marginTop: '0.5rem'}}>
+                                Generera automatiskt affärer när drift överstiger denna tröskel
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <div className="card-header">
+                            <h2 className="card-title">Genererade affärer</h2>
+                            {autoTrades.shouldExecute && (
+                                <button className="btn btn-success" onClick={() => {
+                                    logAudit('AUTO_TRADE', { trades: autoTrades.trades, threshold });
+                                    alert('Affärer köade för utförande');
+                                }}>
+                                    ✓ Utför affärer
+                                </button>
+                            )}
+                        </div>
+                        {autoTrades.shouldExecute ? (
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Tillgångsklass</th>
+                                        <th>Åtgärd</th>
+                                        <th>Amount</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {autoTrades.trades.map((t, i) => (
+                                        <tr key={i}>
+                                            <td><strong>{t.assetClass}</strong></td>
+                                            <td><span className={`badge badge-${t.action === 'BUY' ? 'success' : 'danger'}`}>{t.action}</span></td>
+                                            <td>${(t.amount / 1000).toFixed(0)}K</td>
+                                            <td>{t.reason}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <p style={{padding: '2rem', textAlign: 'center', color: '#64748B'}}>
+                                ✓ Inga affärer behövs. Portfölj inom tolerans.
+                            </p>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // React 18: Use createRoot
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
